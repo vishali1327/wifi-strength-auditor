@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wi-Fi Password Security Auditor</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e3a8a);
+            min-height: 100vh;
+            padding: 30px 15px;
+            color: #172033;
+        }
+
+        .container {
+            max-width: 650px;
+            margin: auto;
+            background: white;
+            border-radius: 18px;
+            padding: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+        }
+
+        h1 {
+            text-align: center;
+            color: #1e3a8a;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #64748b;
+            margin-bottom: 25px;
+        }
+
+        .section {
+            margin-bottom: 22px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 13px;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: #2563eb;
+        }
+
+        .password-box {
+            display: flex;
+            gap: 8px;
+        }
+
+        .password-box input {
+            flex: 1;
+        }
+
+        .password-box button {
+            border: none;
+            background: #2563eb;
+            color: white;
+            padding: 0 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .password-box button:hover {
+            background: #1d4ed8;
+        }
+
+        .audit-btn {
+            width: 100%;
+            padding: 15px;
+            background: #16a34a;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+
+        .audit-btn:hover {
+            background: #15803d;
+        }
+
+        .result {
+            display: none;
+            margin-top: 25px;
+        }
+
+        .score-card {
+            text-align: center;
+            padding: 25px;
+            background: #f8fafc;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .score {
+            font-size: 45px;
+            font-weight: bold;
+        }
+
+        .score-label {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .progress {
+            height: 14px;
+            background: #e2e8f0;
+            border-radius: 20px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        #scoreBar {
+            height: 100%;
+            width: 0;
+            transition: width 0.5s;
+        }
+
+        .checks {
+            margin-top: 15px;
+        }
+
+        .check {
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+
+        .pass {
+            border-left: 5px solid #16a34a;
+        }
+
+        .fail {
+            border-left: 5px solid #dc2626;
+        }
+
+        .warning {
+            border-left: 5px solid #f59e0b;
+        }
+
+        .recommendations {
+            background: #eff6ff;
+            border-radius: 10px;
+            padding: 18px;
+            margin-top: 20px;
+        }
+
+        .recommendations h3 {
+            color: #1e40af;
+            margin-bottom: 10px;
+        }
+
+        .recommendations li {
+            margin: 8px 0 0 20px;
+        }
+
+        .privacy {
+            margin-top: 20px;
+            text-align: center;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🔐 Wi-Fi Security Auditor</h1>
+
+    <p class="subtitle">
+        Audit the security of your Wi-Fi configuration
+    </p>
+
+    <div class="section">
+        <label for="ssid">Wi-Fi Network Name (SSID)</label>
+
+        <input
+            type="text"
+            id="ssid"
+            placeholder="Example: HomeWiFi"
+            autocomplete="off"
+        >
+    </div>
+
+    <div class="section">
+        <label for="password">Wi-Fi Password</label>
+
+        <div class="password-box">
+            <input
+                type="password"
+                id="password"
+                placeholder="Enter Wi-Fi password"
+                autocomplete="off"
+            >
+
+            <button type="button" id="showPassword">
+                Show
+            </button>
+        </div>
+    </div>
+
+    <div class="section">
+        <label for="security">Wi-Fi Security Mode</label>
+
+        <select id="security">
+            <option value="wpa3">WPA3</option>
+            <option value="wpa2">WPA2</option>
+            <option value="mixed">WPA2/WPA3 Mixed</option>
+            <option value="wpa">WPA</option>
+            <option value="wep">WEP</option>
+            <option value="open">Open Network</option>
+        </select>
+    </div>
+
+    <div class="section">
+        <label for="wps">WPS Status</label>
+
+        <select id="wps">
+            <option value="disabled">Disabled</option>
+            <option value="enabled">Enabled</option>
+        </select>
+    </div>
+
+    <button class="audit-btn" onclick="auditWiFi()">
+        🔍 Audit Wi-Fi Security
+    </button>
+
+    <div class="result" id="result">
+
+        <div class="score-card">
+
+            <div class="score" id="score">
+                0
+            </div>
+
+            <div class="score-label" id="scoreLabel">
+                Not Audited
+            </div>
+
+            <div class="progress">
+                <div id="scoreBar"></div>
+            </div>
+
+        </div>
+
+        <h2>Security Checks</h2>
+
+        <div class="checks" id="checks"></div>
+
+        <div class="recommendations">
+
+            <h3>🛡 Recommendations</h3>
+
+            <ul id="recommendations"></ul>
+
+        </div>
+
+    </div>
+
+    <p class="privacy">
+        🔒 Your password is evaluated locally in your browser and is not
+        uploaded by this application.
+    </p>
+
+</div>
+
+
+<script>
+
+const passwordInput = document.getElementById("password");
+const showPassword = document.getElementById("showPassword");
+
+showPassword.addEventListener("click", function () {
+
+    if (passwordInput.type === "password") {
+        passwordInput.type = "text";
+        showPassword.textContent = "Hide";
+    } else {
+        passwordInput.type = "password";
+        showPassword.textContent = "Show";
+    }
+
+});
+
+
+function auditWiFi() {
+
+    const ssid = document
+        .getElementById("ssid")
+        .value
+        .trim();
+
+    const password = passwordInput.value;
+
+    const security = document.getElementById("security").value;
+
+    const wps = document.getElementById("wps").value;
+
+    const checks = [];
+    const recommendations = [];
+
+    let score = 0;
+
+
+    /*
+     * PASSWORD LENGTH
+     */
+
+    if (password.length >= 16) {
+
+        score += 20;
+
+        checks.push({
+            type: "pass",
+            text: "✅ Password length is 16 characters or longer."
+        });
+
+    } else if (password.length >= 12) {
+
+        score += 15;
+
+        checks.push({
+            type: "warning",
+            text: "⚠️ Password is acceptable but 16+ characters is recommended."
+        });
+
+        recommendations.push(
+            "Use a Wi-Fi password of at least 16 characters."
+        );
+
+    } else {
+
+        checks.push({
+            type: "fail",
+            text: "❌ Password is shorter than 12 characters."
+        });
+
+        recommendations.push(
+            "Increase the Wi-Fi password length to at least 16 characters."
+        );
+    }
+
+
+    /*
+     * UPPERCASE
+     */
+
+    if (/[A-Z]/.test(password)) {
+
+        score += 10;
+
+        checks.push({
+            type: "pass",
+            text: "✅ Contains uppercase letters."
+        });
+
+    } else {
+
+        checks.push({
+            type: "warning",
+            text: "⚠️ No uppercase letters detected."
+        });
+
+        recommendations.push(
+            "Consider using uppercase letters."
+        );
+    }
+
+
+    /*
+     * LOWERCASE
+     */
+
+    if (/[a-z]/.test(password)) {
+
+        score += 10;
+
+        checks.push({
+            type: "pass",
+            text: "✅ Contains lowercase letters."
+        });
+
+    } else {
+
+        checks.push({
+            type: "warning",
+            text: "⚠️ No lowercase letters detected."
+        });
+
+        recommendations.push(
+            "Consider using lowercase letters."
+        );
+    }
+
+
+    /*
+     * NUMBERS
+     */
+
+    if (/[0-9]/.test(password)) {
+
+        score += 10;
+
+        checks.push({
+            type: "pass",
+            text: "✅ Contains numbers."
+        });
+
+    } else {
+
+        checks.push({
+            type: "warning",
+            text: "⚠️ No numbers detected."
+        });
+
+        recommendations.push(
+            "Consider including numbers."
+        );
+    }
+
+
+    /*
+     * SPECIAL CHARACTERS
+     */
+
+    if (/[^A-Za-z0-9]/.test(password)) {
+
+        score += 10;
+
+        checks.push({
+            type: "pass",
+            text: "✅ Contains special characters."
+        });
+
+    } else {
+
+        checks.push({
+            type: "warning",
+            text: "⚠️ No special characters detected."
+        });
+
+        recommendations.push(
+            "Consider using special characters."
+        );
+    }
+
+
+    /*
+     * COMMON PASSWORD CHECK
+     */
+
+    const commonPasswords = [
+        "password",
+        "password123",
+        "12345678",
+        "123456789",
+        "1234567890",
+        "qwerty",
+        "qwerty123",
+        "admin123",
+        "letmein",
+        "welcome",
+        "welcome123",
+        "iloveyou",
+        "abc123",
+        "adminadmin"
+    ];
+
+    const lowerPassword = password.toLowerCase();
+
+    if (commonPasswords.includes(lowerPassword)) {
+
+        score -= 30;
+
+        checks.push({
+            type: "fail",
+            text: "❌ Password matches a commonly used weak password."
+        });
+
+        recommendations.push(
+            "Replace commonly used passwords with a unique passphrase."
+        );
+
+    } else {
+
+        score += 10;
+
+        checks.push({
+            type: "pass",
+            text: "✅ Password is not in the basic weak-password list."
+        });
+    }
+
+
+    /*
+     * SSID RELATION CHECK
+     */
+
+    if (
+        ssid &&
+        password.toLowerCase().includes(ssid.toLowerCase())
+    ) {
+
+        score -= 15;
+
+        checks.push({
+            type: "fail",
+            text: "❌ Password contains the Wi-Fi network name."
+        });
+
+        recommendations.push(
+            "Avoid using your SSID or network name inside the password."
+        );
+
+    } else if (ssid) {
+
+        score += 5;
+
+        checks.push({
+            type: "pass",
+            text: "✅ Password does not contain the SSID."
+        });
+    }
+
+
+    /*
+     * SECURITY MODE
+     */
+
+    switch (security) {
+
+        case "wpa3":
+
+            score += 20;
+
+            checks.push({
+                type: "pass",
+                text: "✅ WPA3 security is selected."
+            });
+
+            break;
+
+
+        case "wpa2":
+
+            score += 17;
+
+            checks.push({
+                type: "pass",
+                text: "✅ WPA2 security is selected."
+            });
+
+            recommendations.push(
+                "Use WPA3 when your router and devices support it."
+            );
+
+            break;
+
+
+        case "mixed":
+
+            score += 15;
+
+            checks.push({
+                type: "pass",
+                text: "✅ WPA2/WPA3 mixed mode is selected."
+            });
+
+            break;
+
+
+        case "wpa":
+
+            score += 5;
+
+            checks.push({
+                type: "fail",
+                text: "❌ WPA is outdated."
+            });
+
+            recommendations.push(
+                "Upgrade the router to WPA2 or WPA3."
+            );
+
+            break;
+
+
+        case "wep":
+
+            score -= 20;
+
+            checks.push({
+                type: "fail",
+                text: "❌ WEP is obsolete and insecure."
+            });
+
+            recommendations.push(
+                "Replace WEP with WPA2 or WPA3."
+            );
+
+            break;
+
+
+        case "open":
+
+            score -= 25;
+
+            checks.push({
+                type: "fail",
+                text: "❌ Network has no Wi-Fi encryption."
+            });
+
+            recommendations.push(
+                "Enable WPA2 or WPA3 encryption."
+            );
+
+            break;
+    }
+
+
+    /*
+     * WPS CHECK
+     */
+
+    if (wps === "disabled") {
+
+        score += 5;
+
+        checks.push({
+            type: "pass",
+            text: "✅ WPS is disabled."
+        });
+
+    } else {
+
+        checks.push({
+            type: "warning",
+            text: "⚠️ WPS is enabled."
+        });
+
+        recommendations.push(
+            "Disable WPS if you do not need it."
+        );
+    }
+
+
+    /*
+     * LIMIT SCORE
+     */
+
+    score = Math.max(0, Math.min(100, score));
+
+
+    /*
+     * DISPLAY SCORE
+     */
+
+    document.getElementById("score").textContent =
+        score + "/100";
+
+    const scoreLabel =
+        document.getElementById("scoreLabel");
+
+    const scoreBar =
+        document.getElementById("scoreBar");
+
+
+    if (score >= 80) {
+
+        scoreLabel.textContent =
+            "🟢 Strong Wi-Fi Security";
+
+        scoreLabel.style.color =
+            "#16a34a";
+
+        scoreBar.style.background =
+            "#16a34a";
+
+    } else if (score >= 60) {
+
+        scoreLabel.textContent =
+            "🟡 Moderate Wi-Fi Security";
+
+        scoreLabel.style.color =
+            "#d97706";
+
+        scoreBar.style.background =
+            "#f59e0b";
+
+    } else {
+
+        scoreLabel.textContent =
+            "🔴 Weak Wi-Fi Security";
+
+        scoreLabel.style.color =
+            "#dc2626";
+
+        scoreBar.style.background =
+            "#dc2626";
+    }
+
+
+    scoreBar.style.width =
+        score + "%";
+
+
+    /*
+     * DISPLAY CHECKS
+     */
+
+    const checksContainer =
+        document.getElementById("checks");
+
+    checksContainer.innerHTML = "";
+
+    checks.forEach(function(check) {
+
+        const div = document.createElement("div");
+
+        div.className =
+            "check " + check.type;
+
+        div.textContent =
+            check.text;
+
+        checksContainer.appendChild(div);
+
+    });
+
+
+    /*
+     * DISPLAY RECOMMENDATIONS
+     */
+
+    const recommendationContainer =
+        document.getElementById("recommendations");
+
+    recommendationContainer.innerHTML = "";
+
+
+    if (recommendations.length === 0) {
+
+        const li =
+            document.createElement("li");
+
+        li.textContent =
+            "Your configuration looks good. Continue using a unique password and keep your router firmware updated.";
+
+        recommendationContainer.appendChild(li);
+
+    } else {
+
+        recommendations.forEach(function(item) {
+
+            const li =
+                document.createElement("li");
+
+            li.textContent = item;
+
+            recommendationContainer.appendChild(li);
+
+        });
+    }
+
+
+    document.getElementById("result").style.display =
+        "block";
+}
+
+</script>
+
+</body>
+</html>
